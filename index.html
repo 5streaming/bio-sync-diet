@@ -124,21 +124,70 @@
             box-shadow: 0 6px 20px rgba(255, 158, 109, 0.4);
         }
 
-        /* 数据可视化容器 */
-        .viz-container {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 16px;
-            padding: 1rem;
-            border: 2px dashed rgba(255, 158, 109, 0.3);
-        }
-
-        /* 迷你图表卡片 */
-        .mini-chart-card {
-            background: white;
+        /* 能量曲线图样式 - 修复版 */
+        .energy-curve-container {
+            height: 120px;
+            background: linear-gradient(to top, rgba(255,158,109,0.05) 0%, transparent 50%);
             border-radius: 12px;
             padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+        }
+        
+        .energy-bar {
+            width: 60px;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .energy-bar:hover {
+            transform: scaleY(1.05);
+            filter: brightness(1.1);
+        }
+        
+        .energy-bar::after {
+            content: attr(data-calories) ' kcal';
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        
+        .energy-bar:hover::after {
+            opacity: 1;
+        }
+        
+        .bar-breakfast { background: linear-gradient(to top, #FB923C, #F97316); }
+        .bar-lunch { background: linear-gradient(to top, #4ADE80, #22C55E); }
+        .bar-snack { background: linear-gradient(to top, #A78BFA, #8B5CF6); }
+        .bar-dinner { background: linear-gradient(to top, #F472B6, #EC4899); }
+        .bar-other { background: linear-gradient(to top, #9CA3AF, #6B7280); }
+        
+        .energy-label {
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #4B5563;
+        }
+        
+        /* 加载动画 */
+        @keyframes growUp {
+            from { height: 0 !important; }
+            to { height: var(--final-height); }
+        }
+        
+        .energy-bar.animate {
+            animation: growUp 1s ease-out forwards;
         }
 
         /* 响应式调整 */
@@ -330,38 +379,42 @@
                 <span class="text-3xl">⏰</span> 每日执行时刻表
             </h2>
             
-            <!-- 每日热量曲线图 -->
+            <!-- 每日热量曲线图 - 修复版 -->
             <div class="viz-container mb-6">
-                <h4 class="text-sm font-bold text-gray-600 mb-3">📈 一日能量分布曲线</h4>
-                <div class="flex items-end justify-between h-20 px-4">
+                <h4 class="text-sm font-bold text-gray-600 mb-3 flex items-center gap-2">
+                    <span class="text-lg">📈</span> 一日能量分布曲线
+                </h4>
+                <div class="energy-curve-container">
                     <div class="flex flex-col items-center">
-                        <div class="w-12 bg-orange-400 rounded-t" style="height: 60%"></div>
-                        <span class="text-xs mt-1 text-gray-600">早餐</span>
-                        <span class="text-xs text-orange-600 font-bold">450</span>
+                        <div class="energy-bar bar-breakfast animate" style="height: 60%; --final-height: 60%;" data-calories="450"></div>
+                        <div class="energy-label">早餐</div>
+                        <div class="text-xs text-orange-600 font-bold">450 kcal</div>
                     </div>
                     <div class="flex flex-col items-center">
-                        <div class="w-12 bg-green-400 rounded-t" style="height: 80%"></div>
-                        <span class="text-xs mt-1 text-gray-600">午餐</span>
-                        <span class="text-xs text-green-600 font-bold">580</span>
+                        <div class="energy-bar bar-lunch animate" style="height: 80%; --final-height: 80%;" data-calories="580"></div>
+                        <div class="energy-label">午餐</div>
+                        <div class="text-xs text-green-600 font-bold">580 kcal</div>
                     </div>
                     <div class="flex flex-col items-center">
-                        <div class="w-12 bg-purple-400 rounded-t" style="height: 35%"></div>
-                        <span class="text-xs mt-1 text-gray-600">加餐</span>
-                        <span class="text-xs text-purple-600 font-bold">200</span>
+                        <div class="energy-bar bar-snack animate" style="height: 35%; --final-height: 35%;" data-calories="200"></div>
+                        <div class="energy-label">加餐</div>
+                        <div class="text-xs text-purple-600 font-bold">200 kcal</div>
                     </div>
                     <div class="flex flex-col items-center">
-                        <div class="w-12 bg-pink-400 rounded-t" style="height: 55%"></div>
-                        <span class="text-xs mt-1 text-gray-600">晚餐</span>
-                        <span class="text-xs text-pink-600 font-bold">400</span>
+                        <div class="energy-bar bar-dinner animate" style="height: 55%; --final-height: 55%;" data-calories="400"></div>
+                        <div class="energy-label">晚餐</div>
+                        <div class="text-xs text-pink-600 font-bold">400 kcal</div>
                     </div>
                     <div class="flex flex-col items-center">
-                        <div class="w-12 bg-gray-300 rounded-t" style="height: 20%"></div>
-                        <span class="text-xs mt-1 text-gray-600">其他</span>
-                        <span class="text-xs text-gray-500 font-bold">220</span>
+                        <div class="energy-bar bar-other animate" style="height: 20%; --final-height: 20%;" data-calories="220"></div>
+                        <div class="energy-label">其他</div>
+                        <div class="text-xs text-gray-600 font-bold">220 kcal</div>
                     </div>
                 </div>
-                <div class="flex justify-center mt-2 text-xs text-gray-500">
-                    总热量: 1850 kcal
+                <div class="flex justify-center mt-3 text-sm text-gray-600 bg-white/50 p-2 rounded-lg">
+                    <span class="flex items-center gap-2">
+                        <span class="text-lg">🔥</span> 总热量: <strong class="ml-1">1850 kcal</strong>
+                    </span>
                 </div>
             </div>
 
