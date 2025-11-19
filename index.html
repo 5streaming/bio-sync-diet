@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Sync | 阳光生物黑客食谱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #FF9E6D; /* 温暖橙色 */
+            --primary-light: #FFD8C9;
+            --accent: #6DD5FA; /* 天空蓝 */
+            --accent-light: #C2E9FB;
+            --success: #81E6D9; /* 薄荷绿 */
+            --warning: #FFE66D; /* 阳光黄 */
+            --bg-main: linear-gradient(135deg, #FFF9F2 0%, #F0FDFF 100%);
+            --text-dark: #2D3748;
+            --text-medium: #4A5568;
+            --text-light: #718096;
+        }
+        
+        body {
+            background: var(--bg-main);
+            font-family: 'Fredoka', 'Noto Sans SC', sans-serif;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* 可爱背景装饰 */
+        .bg-decoration::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 158, 109, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(109, 213, 250, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(129, 230, 217, 0.1) 0%, transparent 50%);
+            animation: float 20s infinite ease-in-out;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-30px, -30px) rotate(120deg); }
+            66% { transform: translate(30px, -20px) rotate(240deg); }
+        }
+
+        /* 阳光卡片 */
+        .sunshine-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 
+                0 4px 20px rgba(255, 158, 109, 0.1),
+                0 8px 30px rgba(109, 213, 250, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sunshine-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 8px 30px rgba(255, 158, 109, 0.15),
+                0 12px 40px rgba(109, 213, 250, 0.15);
+        }
+
+        /* 彩虹标签 */
+        .rainbow-tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 时间轴 */
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--primary), var(--accent), var(--success));
+            transform: translateX(-50%);
+            border-radius: 4px;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+
+        /* 可爱按钮 */
+        .cute-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 999px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 158, 109, 0.3);
+        }
+        
+        .cute-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 158, 109, 0.4);
+        }
+
+        /* 数据可视化容器 */
+        .viz-container {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 1rem;
+            border: 2px dashed rgba(255, 158, 109, 0.3);
+        }
+
+        /* 迷你图表卡片 */
+        .mini-chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .timeline-line::before { left: 1.5rem; }
+        }
+    </style>
+</head>
+<body class="bg-decoration min-h-screen pb-20">
+
+    <!-- 顶部仪表盘 -->
+    <header class="max-w-6xl mx-auto pt-10 px-6 mb-12">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
+                    <span class="text-xs font-medium text-green-600 uppercase tracking-wide">Protocol v3.0 ☀️ Active</span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold tracking-tight">
+                    <span class="bg-gradient-to-r from-orange-500 to-blue-500 bg-clip-text text-transparent">Bio-Sync</span>
+                    <span class="text-2xl md:text-3xl font-medium text-gray-600 block md:inline">阳光饮食计划</span>
+                </h1>
+                <p class="text-gray-500 mt-2 text-lg">高考生专属 · 温和减脂 · 脑力全开</p>
+            </div>
+            
+            <div class="flex gap-6 mt-6 md:mt-0 bg-white/60 backdrop-blur-sm p-4 rounded-2xl shadow-sm">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-500">1850 <span class="text-sm text-gray-400 font-normal">kcal</span></div>
+                    <div class="text-xs text-gray-500">每日目标</div>
+                </div>
+                <div class="w-px h-12 bg-gradient-to-b from-transparent via-orange-200 to-transparent"></div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-500">-2.0 <span class="text-sm text-gray-400 font-normal">kg/月</span></div>
+                    <div class="text-xs text-gray-500">温和减脂</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心营养参数 - 增强可视化 -->
+        <div class="sunshine-card p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span class="text-3xl">🔬</span> 核心营养参数
+            </h2>
+            
+            <!-- 宏量营养素条形图 -->
+            <div class="viz-container mb-6">
+                <h4 class="text-sm font-bold text-gray-600 mb-3">宏量营养素分布</h4>
+                <div class="h-8 w-full bg-gray-100 rounded-full overflow-hidden flex">
+                    <div class="h-full bg-orange-400 flex items-center justify-center text-white text-xs font-bold" style="width: 40%">碳水 40%</div>
+                    <div class="h-full bg-green-400 flex items-center justify-center text-white text-xs font-bold" style="width: 35%">蛋白 35%</div>
+                    <div class="h-full bg-blue-400 flex items-center justify-center text-white text-xs font-bold" style="width: 25%">脂肪 25%</div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>180g 碳水</span>
+                    <span>160g 蛋白质</span>
+                    <span>50g 脂肪</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border-2 border-orange-200">
+                    <div class="text-3xl font-bold text-orange-500 mb-1">180g</div>
+                    <div class="text-sm text-gray-600 font-medium">碳水</div>
+                    <div class="text-xs text-gray-500 mt-1">低GI燕麦+蔬菜</div>
+                    <div class="w-full bg-orange-200 h-2 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-orange-400 h-full" style="width: 40%"></div>
+                    </div>
+                </div>
+                <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border-2 border-green-200">
+                    <div class="text-3xl font-bold text-green-500 mb-1">160g</div>
+                    <div class="text-sm text-gray-600 font-medium">蛋白质</div>
+                    <div class="text-xs text-gray-500 mt-1">保护肌肉</div>
+                    <div class="w-full bg-green-200 h-2 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-green-400 h-full" style="width: 35%"></div>
+                    </div>
+                </div>
+                <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border-2 border-blue-200">
+                    <div class="text-3xl font-bold text-blue-500 mb-1">50g</div>
+                    <div class="text-sm text-gray-600 font-medium">脂肪</div>
+                    <div class="text-xs text-gray-500 mt-1">优质脂肪</div>
+                    <div class="w-full bg-blue-200 h-2 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-blue-400 h-full" style="width: 25%"></div>
+                    </div>
+                </div>
+                <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border-2 border-purple-200">
+                    <div class="text-3xl font-bold text-purple-500 mb-1">1850</div>
+                    <div class="text-sm text-gray-600 font-medium">总热量</div>
+                    <div class="text-xs text-gray-500 mt-1">温和缺口</div>
+                    <div class="w-full bg-purple-200 h-2 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-purple-400 h-full" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 顶部双栏 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 左侧：机能分析 -->
+            <div class="lg:col-span-7 sunshine-card p-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-orange-400 to-blue-400"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-xl flex items-center gap-2">
+                        <span class="text-2xl">📊</span> 机能分析
+                    </h3>
+                    <span class="rainbow-tag bg-orange-100 text-orange-600">HEX-CHART</span>
+                </div>
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="w-full md:w-1/2 h-64 relative">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div class="w-full md:w-1/2 space-y-4">
+                        <div class="mini-chart-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-bold text-gray-700">🥩 蛋白质效能</span>
+                                <span class="text-xs text-green-600 font-bold">95%</span>
+                            </div>
+                            <div class="flex gap-1">
+                                <div class="h-3 flex-1 bg-green-200 rounded"></div>
+                                <div class="h-3 flex-1 bg-green-300 rounded"></div>
+                                <div class="h-3 flex-1 bg-green-400 rounded"></div>
+                                <div class="h-3 flex-1 bg-green-400 rounded"></div>
+                                <div class="h-3 flex-1 bg-green-200 rounded"></div>
+                            </div>
+                        </div>
+                        <div class="mini-chart-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-bold text-gray-700">🧠 专注力维持</span>
+                                <span class="text-xs text-blue-600 font-bold">90%</span>
+                            </div>
+                            <div class="flex gap-1">
+                                <div class="h-3 flex-1 bg-blue-200 rounded"></div>
+                                <div class="h-3 flex-1 bg-blue-300 rounded"></div>
+                                <div class="h-3 flex-1 bg-blue-400 rounded"></div>
+                                <div class="h-3 flex-1 bg-blue-400 rounded"></div>
+                                <div class="h-3 flex-1 bg-blue-300 rounded"></div>
+                            </div>
+                        </div>
+                        <div class="mini-chart-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-bold text-gray-700">😋 饱腹感指数</span>
+                                <span class="text-xs text-orange-600 font-bold">92%</span>
+                            </div>
+                            <div class="flex gap-1">
+                                <div class="h-3 flex-1 bg-orange-200 rounded"></div>
+                                <div class="h-3 flex-1 bg-orange-300 rounded"></div>
+                                <div class="h-3 flex-1 bg-orange-400 rounded"></div>
+                                <div class="h-3 flex-1 bg-orange-400 rounded"></div>
+                                <div class="h-3 flex-1 bg-orange-400 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：补剂栈 -->
+            <div class="lg:col-span-5 sunshine-card p-6 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
+                    <span class="text-2xl">💊</span> 外挂程序
+                </h3>
+                <ul class="space-y-3 text-sm">
+                    <li class="flex justify-between items-center p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                        <span class="flex items-center gap-2"><span class="text-lg">🅱️</span> 复合维B + C</span>
+                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full font-bold">早餐后</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                        <span class="flex items-center gap-2"><span class="text-lg">🐟</span> 深海鱼油</span>
+                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full font-bold">早/晚各1</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                        <span class="flex items-center gap-2"><span class="text-lg">⚡</span> 苹果酸</span>
+                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full font-bold">午餐随餐</span>
+                    </li>
+                    <li class="flex justify-between items-center p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors border-2 border-yellow-300">
+                        <span class="flex items-center gap-2"><span class="text-lg">🌙</span> <strong>南非醉茄</strong></span>
+                        <span class="text-xs bg-yellow-300 text-purple-700 px-2 py-1 rounded-full font-bold">睡前300mg</span>
+                    </li>
+                </ul>
+                <div class="mt-4 text-xs bg-white/10 p-3 rounded-xl border border-white/20">
+                    💡 <strong>小贴士：</strong> 补剂是微调工具，不能替代正餐哦！
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 每日执行时刻表 - 可视化增强 -->
+    <section class="max-w-6xl mx-auto px-6 mb-12">
+        <div class="sunshine-card p-6">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span class="text-3xl">⏰</span> 每日执行时刻表
+            </h2>
+            
+            <!-- 每日热量曲线图 -->
+            <div class="viz-container mb-6">
+                <h4 class="text-sm font-bold text-gray-600 mb-3">📈 一日能量分布曲线</h4>
+                <div class="flex items-end justify-between h-20 px-4">
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 bg-orange-400 rounded-t" style="height: 60%"></div>
+                        <span class="text-xs mt-1 text-gray-600">早餐</span>
+                        <span class="text-xs text-orange-600 font-bold">450</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 bg-green-400 rounded-t" style="height: 80%"></div>
+                        <span class="text-xs mt-1 text-gray-600">午餐</span>
+                        <span class="text-xs text-green-600 font-bold">580</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 bg-purple-400 rounded-t" style="height: 35%"></div>
+                        <span class="text-xs mt-1 text-gray-600">加餐</span>
+                        <span class="text-xs text-purple-600 font-bold">200</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 bg-pink-400 rounded-t" style="height: 55%"></div>
+                        <span class="text-xs mt-1 text-gray-600">晚餐</span>
+                        <span class="text-xs text-pink-600 font-bold">400</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 bg-gray-300 rounded-t" style="height: 20%"></div>
+                        <span class="text-xs mt-1 text-gray-600">其他</span>
+                        <span class="text-xs text-gray-500 font-bold">220</span>
+                    </div>
+                </div>
+                <div class="flex justify-center mt-2 text-xs text-gray-500">
+                    总热量: 1850 kcal
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl border-2 border-orange-200">
+                    <div class="font-bold text-lg mb-2 flex items-center gap-2">
+                        <span class="text-xl">🌅</span> 07:30 早餐
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1 mb-3">
+                        <div>🥣 燕麦 80g + 🥚 全蛋2个</div>
+                        <div>🌿 肉桂粉 1勺</div>
+                    </div>
+                    <div class="rainbow-tag bg-white/60 text-orange-600">450 kcal</div>
+                    <div class="text-xs text-gray-500 mt-2">
+                        <strong>营养:</strong> 碳水55g | 蛋白24g | 脂肪16g
+                    </div>
+                </div>
+                <div class="p-4 bg-gradient-to-br from-green-100 to-blue-100 rounded-2xl border-2 border-green-200">
+                    <div class="font-bold text-lg mb-2 flex items-center gap-2">
+                        <span class="text-xl">☀️</span> 12:00 午餐
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1 mb-3">
+                        <div>🐔 鸡胸肉 200g</div>
+                        <div>🥦 蔬菜 200g + 燕麦 50g</div>
+                    </div>
+                    <div class="rainbow-tag bg-white/60 text-green-600">580 kcal</div>
+                    <div class="text-xs text-gray-500 mt-2">
+                        <strong>营养:</strong> 碳水40g | 蛋白55g | 脂肪18g
+                    </div>
+                </div>
+                <div class="p-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl border-2 border-purple-200">
+                    <div class="font-bold text-lg mb-2 flex items-center gap-2">
+                        <span class="text-xl">🌇</span> 16:30 加餐
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1 mb-3">
+                        <div>🥜 坚果 20g</div>
+                        <div>🥚 鸡蛋 1个</div>
+                    </div>
+                    <div class="rainbow-tag bg-white/60 text-purple-600">200 kcal</div>
+                    <div class="text-xs text-gray-500 mt-2">
+                        <strong>作用:</strong> 阻断皮质醇，防暴食
+                    </div>
+                </div>
+                <div class="p-4 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl border-2 border-red-200">
+                    <div class="font-bold text-lg mb-2 flex items-center gap-2">
+                        <span class="text-xl">🌙</span> 19:30 晚餐
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1 mb-3">
+                        <div>🥩 瘦牛肉 150g</div>
+                        <div>🥬 菠菜 250g</div>
+                    </div>
+                    <div class="rainbow-tag bg-white/60 text-red-600">400 kcal</div>
+                    <div class="text-xs text-gray-500 mt-2">
+                        <strong>目标:</strong> 低碳水，夜间燃脂
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 时间轴布局 -->
+    <main class="max-w-5xl mx-auto px-6 relative">
+        <div class="timeline-line hidden md:block"></div>
+
+        <!-- 07:30 早餐 -->
+        <div class="flex flex-col md:flex-row gap-6 md:gap-0 justify-between items-center w-full mb-12">
+            <div class="w-full md:w-[45%] relative">
+                <div class="sunshine-card p-6 border-l-4 border-l-orange-400">
+                    <div class="timeline-dot bg-orange-400 -right-10"></div>
+                    <div class="flex justify-between items-start mb-3">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">🧠</span> 神经系统启动
+                        </h2>
+                        <span class="font-tech font-bold text-2xl text-gray-300">07:30</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-3 space-y-1">
+                        <div>🥣 <strong>纯燕麦片 80g</strong> - 加水煮或开水焖</div>
+                        <div>🥚 <strong>全蛋 2个</strong> - 水煮/少油煎</div>
+                        <div>🌿 <strong>肉桂粉 3g</strong> <span class="rainbow-tag bg-orange-100 text-orange-600">控糖神器</span></div>
+                    </div>
+                    <div class="flex gap-2 mb-3">
+                        <span class="rainbow-tag bg-gray-100 text-gray-600">450 kcal</span>
+                        <span class="rainbow-tag bg-blue-100 text-blue-600">碳水 55g</span>
+                        <span class="rainbow-tag bg-green-100 text-green-600">蛋白 24g</span>
+                    </div>
+                    <div class="text-xs text-gray-500 leading-relaxed p-3 bg-orange-50 rounded-lg border-2 border-orange-100">
+                        <strong class="text-orange-600">🎯 底层逻辑：</strong> 晨起皮质醇高，肉桂粉模拟胰岛素，低GI燕麦平稳供能，防止上午脑雾！
+                    </div>
+                </div>
+            </div>
+            <div class="hidden md:block w-[45%]"></div>
+        </div>
+
+        <!-- 12:00 午餐 -->
+        <div class="flex flex-col md:flex-row gap-6 md:gap-0 justify-between items-center w-full mb-12">
+            <div class="hidden md:block w-[45%]"></div>
+            <div class="w-full md:w-[45%] relative">
+                <div class="sunshine-card p-6 border-l-4 border-l-green-400">
+                    <div class="timeline-dot bg-green-400 -left-10"></div>
+                    <div class="flex justify-between items-start mb-3">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">🔋</span> 能量续航
+                        </h2>
+                        <span class="font-tech font-bold text-2xl text-gray-300">12:00</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-3 space-y-1">
+                        <div>🐔 <strong>鸡胸肉 200g</strong> - 橄榄油煎熟</div>
+                        <div>🥦 <strong>冷冻蔬菜 200g</strong> - 水煮沥干</div>
+                        <div>🥣 <strong>燕麦 50g</strong> - 泡开当饭吃</div>
+                        <div>🫒 <strong>橄榄油 10ml</strong></div>
+                    </div>
+                    <div class="flex gap-2 mb-3">
+                        <span class="rainbow-tag bg-gray-100 text-gray-600">580 kcal</span>
+                        <span class="rainbow-tag bg-green-100 text-green-600">蛋白 55g (High)</span>
+                        <span class="rainbow-tag bg-yellow-100 text-yellow-600">高饱腹感</span>
+                    </div>
+                    <div class="text-xs text-gray-500 leading-relaxed p-3 bg-green-50 rounded-lg border-2 border-green-100">
+                        <strong class="text-green-600">🎯 底层逻辑：</strong> 极高蛋白提供酪氨酸（多巴胺前体），保持下午专注。大量纤维防止血糖崩盘！
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 16:30 加餐 -->
+        <div class="flex flex-col md:flex-row gap-6 md:gap-0 justify-between items-center w-full mb-12">
+            <div class="w-full md:w-[45%] relative">
+                <div class="sunshine-card p-4 border-2 border-dashed border-purple-300 bg-purple-50/30">
+                    <div class="timeline-dot bg-purple-400 -right-10 w-4 h-4"></div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-4xl">🥑</div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-700">皮质醇阻断剂</h3>
+                            <div class="text-sm text-gray-500">
+                                <div>🥜 坚果 20g (杏仁/核桃)</div>
+                                <div>🥚 鸡蛋 1个</div>
+                            </div>
+                            <div class="rainbow-tag bg-purple-100 text-purple-600 mt-1">200 kcal · 16:30</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="hidden md:block w-[45%]"></div>
+        </div>
+
+        <!-- 19:30 晚餐 -->
+        <div class="flex flex-col md:flex-row gap-6 md:gap-0 justify-between items-center w-full mb-12">
+            <div class="hidden md:block w-[45%]"></div>
+            <div class="w-full md:w-[45%] relative">
+                <div class="sunshine-card p-0 overflow-hidden border-2 border-pink-200" id="dinner-card">
+                    <div class="timeline-dot bg-pink-400 -left-10"></div>
+                    
+                    <!-- 顶部控制栏 -->
+                    <div class="bg-pink-50 px-5 py-3 flex justify-between items-center border-b border-pink-100">
+                        <span class="text-sm font-bold text-pink-600 flex items-center gap-2">
+                            <span class="text-lg">🌙</span> 模式切换
+                        </span>
+                        <button onclick="toggleDinner()" class="cute-btn text-xs">
+                            🔄 <span id="toggle-text">切换至: 极简预算版</span>
+                        </button>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2" id="dinner-title">
+                                <span class="text-2xl">🥩</span> 修复与减脂
+                            </h2>
+                            <span class="font-tech font-bold text-2xl text-gray-300">19:30</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-3 space-y-1" id="dinner-ingredients">
+                            <div>🥩 <strong>瘦牛肉 150g</strong> - 牛霖/牛腱子</div>
+                            <div>🥬 <strong>菠菜 250g</strong> - 必须煮熟</div>
+                            <div>🫒 <strong>橄榄油 5ml</strong></div>
+                        </div>
+                        <div class="flex gap-2 mb-3" id="dinner-tags">
+                            <span class="rainbow-tag bg-gray-100 text-gray-600">400 kcal</span>
+                            <span class="rainbow-tag bg-pink-100 text-pink-600">Low Carb</span>
+                            <span class="rainbow-tag bg-red-100 text-red-600">燃脂模式</span>
+                        </div>
+                        <div class="text-xs text-gray-500 leading-relaxed p-3 bg-pink-50 rounded-lg border-2 border-pink-100" id="dinner-desc">
+                            <strong class="text-pink-600">🎯 底层逻辑：</strong> 晚餐阻断碳水，切换燃脂模式。牛肉富含锌和铁，提升睡眠质量！
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关键注意事项 -->
+        <div class="sunshine-card p-6 mb-8 border-2 border-yellow-200 bg-yellow-50/50">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="text-2xl">⚠️</span> 关键注意事项 (必读！)
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-white rounded-xl border-2 border-yellow-100">
+                    <div class="font-bold text-yellow-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">💨</span> 适应期 (胀气预警)
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        前3-5天可能放屁增多、腹胀。这是菌群调整！
+                        <div class="mt-1 font-bold text-yellow-700">解决办法：多喝水 (每天2.5L+)</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-white rounded-xl border-2 border-yellow-100">
+                    <div class="font-bold text-yellow-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🧂</span> 关于盐 (电解质)
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        原味食物要适量放盐！头晕无力通常是盐少了。
+                        <div class="mt-1 font-bold text-yellow-700">建议：使用加碘盐</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-white rounded-xl border-2 border-yellow-100">
+                    <div class="font-bold text-yellow-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🏋️</span> 锻炼配合
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        以力量训练为主，有氧为辅。高蛋白促进肌肉生长！
+                    </div>
+                </div>
+                <div class="p-4 bg-white rounded-xl border-2 border-yellow-100">
+                    <div class="font-bold text-yellow-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🍔</span> "欺骗餐"
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        每两周安排一顿放纵餐！防止代谢适应，抚慰心灵。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部：运动与采购 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <!-- 运动 -->
+            <div class="sunshine-card p-5 bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
+                    <span class="text-xl">🏋️‍♂️</span> 宿舍维护程序
+                    <span class="rainbow-tag bg-white/20 text-white text-xs ml-auto">10 mins</span>
+                </h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                        <span class="flex items-center gap-2"><span class="text-lg">🦵</span> 深蹲</span>
+                        <span class="font-mono text-green-300 font-bold">20次 × 3组</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+                        <span class="flex items-center gap-2"><span class="text-lg">💪</span> 俯卧撑</span>
+                        <span class="font-mono text-blue-300 font-bold">10次 × 3组</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 采购清单 -->
+            <div class="sunshine-card p-5">
+                <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
+                    <span class="text-xl">🛒</span> 月度战备清单
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-100 flex items-center gap-2 hover:border-orange-200 transition-colors">
+                        <span class="text-lg">🥣</span> 燕麦片 4kg
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-100 flex items-center gap-2 hover:border-green-200 transition-colors">
+                        <span class="text-lg">🐔</span> 鸡胸肉 6kg
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-100 flex items-center gap-2 hover:border-red-200 transition-colors">
+                        <span class="text-lg">🐮</span> 牛肉 4.5kg
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-100 flex items-center gap-2 hover:border-blue-200 transition-colors">
+                        <span class="text-lg">🥦</span> 冻蔬菜 10kg
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-green-50 rounded-xl border-2 border-green-100">
+                    <div class="text-sm text-green-700 font-bold flex items-center gap-2">
+                        <span class="text-lg">💰</span> 月度预算：约 650-750 元
+                    </div>
+                    <div class="text-xs text-green-600">+ 补剂约 200元 = 1000元以内</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 极简备餐指南 -->
+        <div class="sunshine-card p-6 mb-8">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="text-2xl">🍳</span> 极简备餐指南
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-red-50 rounded-xl border-2 border-red-100 hover:border-red-300 transition-colors">
+                    <div class="font-bold text-red-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🥩</span> 肉类批量处理
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <div>• 周末煮好1kg鸡胸肉</div>
+                        <div>• 切丁分装5份冷藏</div>
+                        <div>• 每天微波炉加热</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-blue-50 rounded-xl border-2 border-blue-100 hover:border-blue-300 transition-colors">
+                    <div class="font-bold text-blue-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🥣</span> 燕麦选择
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <div>• 买"传统压片燕麦"</div>
+                        <div>• 不要快煮碎麦片</div>
+                        <div>• GI值更低，更扛饿</div>
+                    </div>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl border-2 border-green-100 hover:border-green-300 transition-colors">
+                    <div class="font-bold text-green-600 mb-2 flex items-center gap-2">
+                        <span class="text-lg">🥦</span> 蔬菜处理技巧
+                    </div>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        <div>• 微波炉3-4分钟</div>
+                        <div>• 比水煮更干爽</div>
+                        <div>• 保留更多营养</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // 雷达图配置 - 更鲜艳配色
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['专注力', '肌肉合成', '饱腹感', '微量元素', '激素健康'],
+                datasets: [{
+                    data: [90, 85, 95, 80, 88],
+                    fill: true,
+                    backgroundColor: 'rgba(255, 158, 109, 0.25)',
+                    borderColor: '#FF9E6D',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#FF9E6D',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0,0,0,0.05)' },
+                        grid: { color: 'rgba(0,0,0,0.03)' },
+                        pointLabels: {
+                            font: { size: 12, family: "'Fredoka', sans-serif", weight: '500' },
+                            color: '#4A5568'
+                        },
+                        ticks: { display: false },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                },
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        // 晚餐切换逻辑
+        let isBeef = true;
+        function toggleDinner() {
+            isBeef = !isBeef;
+            const dinnerData = {
+                beef: {
+                    btnText: "切换至: 极简预算版",
+                    title: "🥩 修复与减脂",
+                    ingredients: `
+                        <div>🥩 <strong>瘦牛肉 150g</strong> - 牛霖/牛腱子</div>
+                        <div>🥬 <strong>菠菜 250g</strong> - 必须煮熟</div>
+                        <div>🫒 <strong>橄榄油 5ml</strong></div>
+                    `,
+                    tags: `
+                        <span class="rainbow-tag bg-gray-100 text-gray-600">400 kcal</span>
+                        <span class="rainbow-tag bg-pink-100 text-pink-600">Low Carb</span>
+                        <span class="rainbow-tag bg-red-100 text-red-600">燃脂模式</span>
+                    `,
+                    desc: `<strong class="text-pink-600">🎯 底层逻辑：</strong> 晚餐阻断碳水，切换燃脂模式。牛肉富含锌和铁，提升睡眠质量！`
+                },
+                budget: {
+                    btnText: "切换至: 豪华牛肉版",
+                    title: "🐟 极简蛋白",
+                    ingredients: `
+                        <div>🐟 <strong>水浸金枪鱼罐头</strong> 或</div>
+                        <div>🍗 <strong>去皮鸡腿肉 150g</strong></div>
+                        <div>🥬 <strong>菠菜 250g</strong></div>
+                    `,
+                    tags: `
+                        <span class="rainbow-tag bg-gray-100 text-gray-600">320 kcal</span>
+                        <span class="rainbow-tag bg-blue-100 text-blue-600">Budget Friendly</span>
+                        <span class="rainbow-tag bg-green-100 text-green-600">高性价比</span>
+                    `,
+                    desc: `<strong class="text-blue-600">🎯 底层逻辑：</strong> 极致性价比方案。提供纯粹蛋白质，热量更低，适合预算紧张时执行！`
+                }
+            };
+            
+            const data = isBeef ? dinnerData.beef : dinnerData.budget;
+            document.getElementById('toggle-text').textContent = data.btnText;
+            document.getElementById('dinner-title').innerHTML = data.title;
+            document.getElementById('dinner-ingredients').innerHTML = data.ingredients;
+            document.getElementById('dinner-tags').innerHTML = data.tags;
+            document.getElementById('dinner-desc').innerHTML = data.desc;
+            
+            // 添加切换动画
+            document.getElementById('dinner-card').style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                document.getElementById('dinner-card').style.transform = '';
+            }, 200);
+        }
+    </script>
+</body>
+</html>
