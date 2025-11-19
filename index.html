@@ -195,9 +195,35 @@
         @media (max-width: 768px) {
             .timeline-line::before { left: 1.5rem; }
         }
+        /* 悬浮粒子背景 - 添加在 style 标签末尾 */
+.particle {
+    position: fixed;
+    font-size: 24px;
+    animation: float-particle 15s infinite ease-in-out;
+    opacity: 0.15;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@keyframes float-particle {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+.particle:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
+.particle:nth-child(2) { top: 60%; right: 10%; animation-delay: -3s; }
+.particle:nth-child(3) { bottom: 20%; left: 15%; animation-delay: -6s; }
+.particle:nth-child(4) { top: 40%; left: 80%; animation-delay: -9s; }
+.particle:nth-child(5) { bottom: 40%; right: 20%; animation-delay: -12s; }
     </style>
 </head>
 <body class="bg-decoration min-h-screen pb-20">
+    <!-- 悬浮粒子 - 添加在 body 标签下面 -->
+<span class="particle">🥦</span>
+<span class="particle">🥩</span>
+<span class="particle">🥑</span>
+<span class="particle">🥣</span>
+<span class="particle">💊</span>
 
     <!-- 顶部仪表盘 -->
     <header class="max-w-6xl mx-auto pt-10 px-6 mb-12">
@@ -830,7 +856,22 @@
                 document.getElementById('dinner-card').style.transform = '';
             }, 200);
         }
+        // 滚动视差动画 - 添加在 script 标签末尾
+window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset;
+    const parallax = document.querySelector('.bg-decoration::before');
+    if (parallax) {
+        parallax.style.transform = `translateY(${scrolled * 0.3}px)`;
+    }
+    
+    // 为时间线添加轻微视差
+    const timeline = document.querySelector('.timeline-line::before');
+    if (timeline) {
+        timeline.style.transform = `translateX(-50%) translateY(${scrolled * 0.2}px)`;
+    }
+});
     </script>
 </body>
 </html>
+
 
